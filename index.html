@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pantry Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="app">
+    <div class="brand">
+      <h1>Pantry Log</h1>
+      <span class="tag" id="lastUpdated"></span>
+    </div>
+    <div class="actions">
+      <button class="add-btn ghost" id="openBulk">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Scan
+      </button>
+      <button class="add-btn" id="openAdd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add item
+      </button>
+    </div>
+  </header>
+
+  <section class="stats">
+    <div class="stat"><div class="n" id="statTotal">0</div><div class="l">Items tracked</div></div>
+    <div class="stat low"><div class="n" id="statLow">0</div><div class="l">Running low</div></div>
+    <div class="stat out"><div class="n" id="statOut">0</div><div class="l">Out of stock</div></div>
+  </section>
+
+  <div class="banner" id="exampleBanner" hidden>
+    <span>These are example items so you can see how it works — edit the quantities or clear them to start your own list.</span>
+    <button id="clearExamples">Clear examples</button>
+  </div>
+
+  <div class="controls">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search items…">
+    </div>
+    <div class="chips" id="filterChips">
+      <button class="chip" data-filter="all" aria-pressed="true">All <span class="count" id="cAll"></span></button>
+      <button class="chip" data-filter="good">In stock <span class="count" id="cGood"></span></button>
+      <button class="chip" data-filter="low">Low <span class="count" id="cLow"></span></button>
+      <button class="chip" data-filter="out">Out <span class="count" id="cOut"></span></button>
+    </div>
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <div class="empty" id="emptyState" hidden>
+    <div class="big">Nothing here</div>
+    <div>Try a different filter, or add your first item.</div>
+  </div>
+</div>
+
+<dialog id="addDialog">
+  <form class="dialog-inner" id="addForm">
+    <h2>Add pantry item</h2>
+    <div class="field">
+      <label for="fName">Item name</label>
+      <input type="text" id="fName" placeholder="e.g. Basmati rice" required autocomplete="off">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="fQty">Quantity</label>
+        <input type="number" id="fQty" min="0" step="1" value="1" required>
+      </div>
+      <div class="field">
+        <label for="fUnit">Unit</label>
+        <select id="fUnit">
+          <option value="pcs">pcs</option>
+          <option value="jars">jars</option>
+          <option value="cans">cans</option>
+          <option value="bags">bags</option>
+          <option value="boxes">boxes</option>
+          <option value="g">g</option>
+          <option value="kg">kg</option>
+          <option value="ml">ml</option>
+          <option value="l">l</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="fThresh">Low-stock warning at or below</label>
+      <input type="number" id="fThresh" min="0" step="1" value="1" required>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="btn-plain" id="cancelAdd">Cancel</button>
+      <button type="submit" class="btn-primary">Add to pantry</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="bulkDialog">
+  <form class="dialog-inner" id="bulkForm">
+    <h2>Add several items</h2>
+
+    <button type="button" class="scan-btn" id="scanReceipt">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Scan a receipt photo
+    </button>
+    <input type="file" id="receiptFile" accept="image/*" capture="environment" hidden>
+    <div class="scan-status" id="scanStatus" hidden></div>
+
+    <p class="hint">
+      …or type / paste a list — one item per line or separated by commas. Add a
+      quantity like <code>rice x2</code>, <code>flour 2 kg</code>, or <code>3 eggs</code>.
+    </p>
+    <div class="field">
+      <label for="bulkText">Items</label>
+      <textarea id="bulkText" rows="6" placeholder="rice&#10;pasta x2&#10;olive oil 1 l&#10;milk, eggs x12, butter"></textarea>
+    </div>
+    <div class="bulk-preview" id="bulkPreview" hidden></div>
+    <div class="dialog-actions">
+      <button type="button" class="btn-plain" id="cancelBulk">Cancel</button>
+      <button type="submit" class="btn-primary" id="bulkSubmit" disabled>Add items</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module" src="/src/main.ts"></script>
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "pantry-log",
+  "version": "1.0.0",
+  "description": "A simple pantry inventory tracker — name, quantity, unit, and low-stock status.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  },
+  "dependencies": {
+    "tesseract.js": "^5.1.1"
+  }
+}

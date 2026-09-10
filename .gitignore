@@ -1,0 +1,7 @@
+node_modules
+dist
+*.local
+.DS_Store
+
+# tesseract.js language data (downloaded at runtime / by node tests)
+*.traineddata
