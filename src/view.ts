@@ -1,5 +1,6 @@
 import type { AppState } from './store';
-import type { PantryItem, Status } from './types';
+import type { Category, PantryItem, Status } from './types';
+import { CATEGORIES } from './types';
 import { statusOf, statusLabel } from './status';
 import { byId, h, svg } from './dom';
 
@@ -47,6 +48,10 @@ function visibleItems(state: AppState): PantryItem[] {
   });
 }
 
+function byCategory(items: readonly PantryItem[], category: Category): PantryItem[] {
+  return items.filter((item) => item.category === category);
+}
+
 function rowEl(item: PantryItem): HTMLElement {
   const status: Status = statusOf(item);
 
@@ -73,6 +78,17 @@ function rowEl(item: PantryItem): HTMLElement {
   return h('div', { class: 'row', 'data-id': item.id }, [nameCol, stepper, pill, del]);
 }
 
+function sectionEl(label: string, items: readonly PantryItem[]): HTMLElement {
+  const rows = h('div', { class: 'category-rows' }, items.map(rowEl));
+  return h('section', { class: 'category-section' }, [
+    h('h2', { class: 'category-heading' }, [
+      label,
+      h('span', { class: 'category-count' }, [String(items.length)]),
+    ]),
+    rows,
+  ]);
+}
+
 /** Repaint the whole list, stats, and banners from the current state. */
 export function render(state: AppState): void {
   const counts = countByStatus(state.items);
@@ -87,7 +103,11 @@ export function render(state: AppState): void {
 
   els.exampleBanner.hidden = !state.showingExamples;
 
-  const rows = visibleItems(state);
-  els.list.replaceChildren(...rows.map(rowEl));
-  els.emptyState.hidden = rows.length !== 0;
+  const visible = visibleItems(state);
+  const sections = CATEGORIES.map((meta) => ({ meta, items: byCategory(visible, meta.id) })).filter(
+    (section) => section.items.length > 0,
+  );
+
+  els.list.replaceChildren(...sections.map((section) => sectionEl(section.meta.label, section.items)));
+  els.emptyState.hidden = visible.length !== 0;
 }

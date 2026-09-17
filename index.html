@@ -91,6 +91,14 @@
       <label for="fThresh">Low-stock warning at or below</label>
       <input type="number" id="fThresh" min="0" step="1" value="1" required>
     </div>
+    <div class="field">
+      <label for="fCategory">Section</label>
+      <select id="fCategory">
+        <option value="daily" selected>Daily essentials</option>
+        <option value="india">From India</option>
+        <option value="bulk">Bulk staples</option>
+      </select>
+    </div>
     <div class="dialog-actions">
       <button type="button" class="btn-plain" id="cancelAdd">Cancel</button>
       <button type="submit" class="btn-primary">Add to pantry</button>
@@ -116,6 +124,14 @@
     <div class="field">
       <label for="bulkText">Items</label>
       <textarea id="bulkText" rows="6" placeholder="rice&#10;pasta x2&#10;olive oil 1 l&#10;milk, eggs x12, butter"></textarea>
+    </div>
+    <div class="field">
+      <label for="bulkCategory">Add these to</label>
+      <select id="bulkCategory">
+        <option value="daily" selected>Daily essentials</option>
+        <option value="india">From India</option>
+        <option value="bulk">Bulk staples</option>
+      </select>
     </div>
     <div class="bulk-preview" id="bulkPreview" hidden></div>
     <div class="dialog-actions">

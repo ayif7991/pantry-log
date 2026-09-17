@@ -1,6 +1,9 @@
 import type { NewItemInput } from './store';
+import type { ParsedItemDraft } from './parseBulk';
 import { parseBulkInput } from './parseBulk';
 import { scanReceipt } from './receiptScan';
+import type { Category } from './types';
+import { DEFAULT_CATEGORY, isCategory } from './types';
 import { byId, h } from './dom';
 
 /**
@@ -17,8 +20,9 @@ export function initBulkDialog(onAdd: (inputs: NewItemInput[]) => void): void {
   const scanBtn = byId<HTMLButtonElement>('scanReceipt');
   const fileInput = byId<HTMLInputElement>('receiptFile');
   const status = byId('scanStatus');
+  const categoryInput = byId<HTMLSelectElement>('bulkCategory');
 
-  let parsed: NewItemInput[] = [];
+  let parsed: ParsedItemDraft[] = [];
 
   const refresh = (): void => {
     parsed = parseBulkInput(textarea.value);
@@ -93,7 +97,9 @@ export function initBulkDialog(onAdd: (inputs: NewItemInput[]) => void): void {
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     if (parsed.length === 0) return;
-    onAdd(parsed);
+
+    const category: Category = isCategory(categoryInput.value) ? categoryInput.value : DEFAULT_CATEGORY;
+    onAdd(parsed.map((draft) => ({ ...draft, category })));
     dialog.close();
   });
 }

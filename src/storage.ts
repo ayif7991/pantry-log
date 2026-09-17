@@ -1,4 +1,5 @@
 import type { PantryItem } from './types';
+import { DEFAULT_CATEGORY, isCategory } from './types';
 
 const STORAGE_KEY = 'pantry-log-items-v1';
 
@@ -18,10 +19,15 @@ export function loadItems(): PantryItem[] | null {
 
   try {
     const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as PantryItem[]) : null;
+    return Array.isArray(parsed) ? parsed.map(normalizeItem) : null;
   } catch {
     return null;
   }
+}
+
+/** Backfill `category` on items saved before that field existed. */
+function normalizeItem(raw: PantryItem): PantryItem {
+  return isCategory(raw.category) ? raw : { ...raw, category: DEFAULT_CATEGORY };
 }
 
 /** Persist the item list. Failures (private mode, quota) are ignored on purpose. */
