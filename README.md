@@ -1,5 +1,7 @@
 # Pantry Log
 
+Live at **[pantry-log-steel.vercel.app](https://pantry-log-steel.vercel.app)**.
+
 A small pantry inventory tracker. Each item has a name, quantity, unit, and a
 low-stock threshold; the UI shows colour-coded status pills (in stock / low /
 out) and a stats strip. Data is stored in the browser's `localStorage`.
