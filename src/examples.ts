@@ -6,12 +6,16 @@ import type { PantryItem } from './types';
  * or replaced the moment the user edits/adds/removes anything.
  */
 export const EXAMPLE_ITEMS: readonly PantryItem[] = [
-  { id: 'ex1', name: 'Basmati rice', qty: 3, unit: 'kg', threshold: 1 },
-  { id: 'ex2', name: 'Penne pasta', qty: 1, unit: 'boxes', threshold: 2 },
-  { id: 'ex3', name: 'Olive oil', qty: 250, unit: 'ml', threshold: 200 },
-  { id: 'ex4', name: 'Chopped tomatoes', qty: 4, unit: 'cans', threshold: 2 },
-  { id: 'ex5', name: 'Ground coffee', qty: 0, unit: 'bags', threshold: 1 },
-  { id: 'ex6', name: 'Black pepper', qty: 1, unit: 'jars', threshold: 1 },
-  { id: 'ex7', name: 'Rolled oats', qty: 900, unit: 'g', threshold: 300 },
-  { id: 'ex8', name: 'Honey', qty: 2, unit: 'jars', threshold: 1 },
+  { id: 'ex1', name: 'Basmati rice', qty: 5, unit: 'kg', threshold: 2 },
+  { id: 'ex2', name: 'Toor dal (Arhar)', qty: 2, unit: 'kg', threshold: 1 },
+  { id: 'ex3', name: 'Chana dal', qty: 1, unit: 'kg', threshold: 0.5 },
+  { id: 'ex4', name: 'Urad dal', qty: 200, unit: 'g', threshold: 300 },
+  { id: 'ex5', name: 'Moong dal', qty: 0, unit: 'g', threshold: 200 },
+  { id: 'ex6', name: 'Masoor dal (red lentils)', qty: 400, unit: 'g', threshold: 200 },
+  { id: 'ex7', name: 'Turmeric powder (Haldi)', qty: 150, unit: 'g', threshold: 100 },
+  { id: 'ex8', name: 'Red chilli powder', qty: 50, unit: 'g', threshold: 100 },
+  { id: 'ex9', name: 'Garam masala', qty: 0, unit: 'g', threshold: 50 },
+  { id: 'ex10', name: 'Cumin seeds (Jeera)', qty: 100, unit: 'g', threshold: 50 },
+  { id: 'ex11', name: 'Mustard seeds (Rai)', qty: 80, unit: 'g', threshold: 50 },
+  { id: 'ex12', name: 'Tea powder', qty: 250, unit: 'g', threshold: 100 },
 ];
