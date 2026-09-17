@@ -273,6 +273,56 @@ button.add-btn.ghost:hover { filter: none; background: var(--accent-soft); }
 .list {
   display: flex;
   flex-direction: column;
+  gap: 28px;
+}
+
+.category-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.category-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  font-size: 16.5px;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+.category-heading::-webkit-details-marker,
+.category-heading::marker {
+  display: none;
+  content: '';
+}
+
+.category-heading .chevron {
+  width: 15px;
+  height: 15px;
+  color: var(--ink-faint);
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+details[open] > .category-heading .chevron { transform: rotate(90deg); }
+
+.category-label { flex: 1 1 auto; }
+
+.category-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-faint);
+}
+
+.category-rows {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 

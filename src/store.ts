@@ -1,4 +1,4 @@
-import type { Filter, PantryItem, Unit } from './types';
+import type { Category, Filter, PantryItem, Unit } from './types';
 import { EXAMPLE_ITEMS } from './examples';
 import { loadItems, saveItems } from './storage';
 
@@ -21,6 +21,7 @@ export interface NewItemInput {
   qty: number;
   unit: Unit;
   threshold: number;
+  category: Category;
 }
 
 /**

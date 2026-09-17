@@ -1,6 +1,6 @@
 import type { NewItemInput } from './store';
-import type { Unit } from './types';
-import { UNITS } from './types';
+import type { Category, Unit } from './types';
+import { DEFAULT_CATEGORY, isCategory, UNITS } from './types';
 import { byId } from './dom';
 
 function isUnit(value: string): value is Unit {
@@ -18,6 +18,7 @@ export function initAddDialog(onAdd: (input: NewItemInput) => void): void {
   const qtyInput = byId<HTMLInputElement>('fQty');
   const unitInput = byId<HTMLSelectElement>('fUnit');
   const threshInput = byId<HTMLInputElement>('fThresh');
+  const categoryInput = byId<HTMLSelectElement>('fCategory');
 
   const open = (): void => {
     form.reset();
@@ -43,12 +44,14 @@ export function initAddDialog(onAdd: (input: NewItemInput) => void): void {
 
     const rawUnit = unitInput.value;
     const unit: Unit = isUnit(rawUnit) ? rawUnit : 'pcs';
+    const category: Category = isCategory(categoryInput.value) ? categoryInput.value : DEFAULT_CATEGORY;
 
     onAdd({
       name,
       qty: Number.parseFloat(qtyInput.value) || 0,
       unit,
       threshold: Number.parseFloat(threshInput.value) || 0,
+      category,
     });
 
     dialog.close();

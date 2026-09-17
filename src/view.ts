@@ -1,7 +1,14 @@
 import type { AppState } from './store';
-import type { PantryItem, Status } from './types';
+import type { Category, CategoryMeta, PantryItem, Status } from './types';
+import { CATEGORIES } from './types';
 import { statusOf, statusLabel } from './status';
+import { isCollapsed, setCollapsed } from './categoryCollapse';
 import { byId, h, svg } from './dom';
+
+const CHEVRON_ICON = `
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="9 6 15 12 9 18"/>
+  </svg>`;
 
 const TRASH_ICON = `
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -47,6 +54,10 @@ function visibleItems(state: AppState): PantryItem[] {
   });
 }
 
+function byCategory(items: readonly PantryItem[], category: Category): PantryItem[] {
+  return items.filter((item) => item.category === category);
+}
+
 function rowEl(item: PantryItem): HTMLElement {
   const status: Status = statusOf(item);
 
@@ -73,6 +84,25 @@ function rowEl(item: PantryItem): HTMLElement {
   return h('div', { class: 'row', 'data-id': item.id }, [nameCol, stepper, pill, del]);
 }
 
+function sectionEl(meta: CategoryMeta, items: readonly PantryItem[]): HTMLDetailsElement {
+  const chevron = svg(CHEVRON_ICON);
+  chevron.setAttribute('class', 'chevron');
+
+  const summary = h('summary', { class: 'category-heading' }, [
+    chevron,
+    h('span', { class: 'category-label' }, [meta.label]),
+    h('span', { class: 'category-count' }, [String(items.length)]),
+  ]);
+  const rows = h('div', { class: 'category-rows' }, items.map(rowEl));
+
+  const attrs: Record<string, string> = { class: 'category-section' };
+  if (!isCollapsed(meta.id)) attrs['open'] = '';
+
+  const details = h('details', attrs, [summary, rows]);
+  details.addEventListener('toggle', () => setCollapsed(meta.id, !details.open));
+  return details;
+}
+
 /** Repaint the whole list, stats, and banners from the current state. */
 export function render(state: AppState): void {
   const counts = countByStatus(state.items);
@@ -87,7 +117,11 @@ export function render(state: AppState): void {
 
   els.exampleBanner.hidden = !state.showingExamples;
 
-  const rows = visibleItems(state);
-  els.list.replaceChildren(...rows.map(rowEl));
-  els.emptyState.hidden = rows.length !== 0;
+  const visible = visibleItems(state);
+  const sections = CATEGORIES.map((meta) => ({ meta, items: byCategory(visible, meta.id) })).filter(
+    (section) => section.items.length > 0,
+  );
+
+  els.list.replaceChildren(...sections.map((section) => sectionEl(section.meta, section.items)));
+  els.emptyState.hidden = visible.length !== 0;
 }
