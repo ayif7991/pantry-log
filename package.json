@@ -7,11 +7,16 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "cross-env NODE_OPTIONS=--no-experimental-webstorage vitest run",
+    "test:watch": "cross-env NODE_OPTIONS=--no-experimental-webstorage vitest"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
+    "jsdom": "^25.0.1",
     "typescript": "^5.7.2",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "tesseract.js": "^5.1.1"

@@ -29,12 +29,20 @@ npm run dev        # http://localhost:5173
 
 ## Scripts
 
-| Command             | What it does                                  |
-| ------------------- | --------------------------------------------- |
-| `npm run dev`       | Start the Vite dev server with HMR            |
-| `npm run build`     | Type-check, then build to `dist/`             |
-| `npm run preview`   | Serve the production build locally            |
-| `npm run typecheck` | Run `tsc --noEmit`                            |
+| Command              | What it does                                  |
+| -------------------- | ---------------------------------------------- |
+| `npm run dev`        | Start the Vite dev server with HMR            |
+| `npm run build`      | Type-check, then build to `dist/`             |
+| `npm run preview`    | Serve the production build locally            |
+| `npm run typecheck`  | Run `tsc --noEmit`                            |
+| `npm test`           | Run the unit test suite once                  |
+| `npm run test:watch` | Run tests in watch mode                       |
+
+Tests run under [Vitest](https://vitest.dev/) with a jsdom environment. Every
+`src/*.ts` module has a matching `src/*.test.ts`; modules that touch the DOM
+(`view.ts`, `addDialog.ts`, `bulkDialog.ts`) are tested against a shared DOM
+fixture (`src/test/fixture.ts`) rather than a real browser, and `tesseract.js`
+is mocked in `receiptScan.test.ts` so the suite runs fully offline.
 
 ## Layout
 
@@ -50,9 +58,11 @@ src/
   parseBulk.ts      Free-text list -> item drafts (quantities, units, merge)
   receiptScan.ts    Receipt photo -> OCR -> candidate item lines
   status.ts         statusOf() / statusLabel() — stock classification
-  storage.ts        localStorage load/save
+  storage.ts        localStorage load/save (with legacy-item backfill)
+  categoryCollapse.ts  Which category sections are collapsed (localStorage)
   examples.ts       Seed data shown on first visit
-  types.ts          Shared types (PantryItem, Unit, Status, Filter)
+  types.ts          Shared types (PantryItem, Category, Unit, Status, Filter)
   dom.ts            Small DOM helpers (byId, h, svg)
   styles.css        All styling (light + dark themes)
+  test/fixture.ts   Shared DOM fixture + dialog stubs for the DOM-facing tests
 ```
