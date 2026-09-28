@@ -94,6 +94,10 @@ const NOISE = new RegExp(
     'retour',
     'artikelen',
     'openingstijden',
+    '\\baantal\\b',
+    'omschrijving',
+    'bankpas',
+    'actieprijs',
   ].join('|'),
   'i',
 );
@@ -184,9 +188,12 @@ function cleanupLine(raw: string): string | null {
   if (!line) return null;
   if (NEGATIVE_PRICE.test(line)) return null; // coupon/discount adjustment, not a product
 
-  // "2 @ $1.99" / "2 @ 1,99 ea" -> remember the quantity, drop the pricing.
+  // "2 @ $1.99" / "2 @ 1,99 ea" (US-style) or "2 x 3,14" (the inline
+  // per-unit price Dutch/European receipts print after the item name,
+  // separate from the line's own trailing total) -> remember the quantity,
+  // drop the per-unit pricing.
   let qty: number | null = null;
-  const atMatch = line.match(new RegExp(String.raw`(\d+)\s*@\s*${PRICE}\s*(?:ea\b)?`, 'i'));
+  const atMatch = line.match(new RegExp(String.raw`(\d+)\s*(?:@|x|×)\s*${PRICE}\s*(?:ea\b)?`, 'i'));
   if (atMatch && atMatch[1]) {
     qty = Number.parseInt(atMatch[1], 10);
     line = line.replace(atMatch[0], ' ');

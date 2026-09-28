@@ -166,6 +166,59 @@ describe('extractItemLines', () => {
       'Hagelslag Puur 400g',
     ]);
   });
+
+  it('folds an inline "N x price" multiplier into an xN suffix', () => {
+    // European/Dutch receipts often show the per-unit price inline after
+    // the name (distinct from the US "N @ price" style), separate from the
+    // line's own trailing total.
+    expect(extractItemLines('PISTACHIOS 2 x 3.14   6.28')).toEqual(['Pistachios x2']);
+    expect(extractItemLines('SNACK MIX 2 × 0.78   1.56')).toEqual(['Snack Mix x2']);
+  });
+
+  it('handles a real Dutch supermarket receipt: inline multipliers, per-line ' +
+    'promo discounts, and receipt-summary words (Aantal/Omschrijving/Bankpas)', () => {
+    // Taken from an actual Jumbo receipt layout: a right-aligned price
+    // column, "Actieprijs" (promo price) shown as its own negative-priced
+    // line directly under the item it discounts, and multi-buy items
+    // priced inline as "2 x 3,14" ahead of the line's own total.
+    const receipt = [
+      'OMSCHRIJVING                    EUR',
+      'Coquilles in zak              10,99 B',
+      '    Actieprijs                 -3,00',
+      'Pistachenoten Calif. 2 x 3,14  6,28 B',
+      '    Actieprijs                 -1,30',
+      'Boerenkool                     1,89 B',
+      '    Actieprijs                 -0,60',
+      'Verse rookworst                1,99 B',
+      'Scharreleieren 12st.            2,39 B',
+      'Margarine                       1,79 B',
+      'Bananen                         1,41 B',
+      '  1,182 kg x 1,19   EUR',
+      'Multi Color sla                 1,19 B',
+      'Slamix              2 x 1,19    2,38 B',
+      'Chocolade kruidnoten 2 x 0,78   1,56 B',
+      '------------------------------------',
+      'Aantal              24art.',
+      '',
+      'Totaal                         44,16',
+      'Bankpas                        44,16',
+      '------------------------------------',
+      "Customer's receipt",
+    ].join('\n');
+
+    expect(extractItemLines(receipt)).toEqual([
+      'Coquilles In Zak',
+      'Pistachenoten Calif x2',
+      'Boerenkool',
+      'Verse Rookworst',
+      'Scharreleieren 12st',
+      'Margarine',
+      'Bananen',
+      'Multi Color Sla',
+      'Slamix x2',
+      'Chocolade Kruidnoten x2',
+    ]);
+  });
 });
 
 describe('scanReceipt', () => {
