@@ -42,6 +42,16 @@ describe('pickProductName', () => {
   it('title-cases the winning line', () => {
     expect(pickProductName([line('MANGO PICKLE', 30)])).toBe('Mango Pickle');
   });
+
+  it('ignores Dutch packaging fine print too', () => {
+    const lines = [
+      line('Ingrediënten: tarwebloem, water', 40),
+      line('Volkoren Brood', 32),
+      line('Houdbaar tot: zie deksel', 12),
+      line('Bewaren beneden 4 graden', 38),
+    ];
+    expect(pickProductName(lines)).toBe('Volkoren Brood');
+  });
 });
 
 vi.mock('tesseract.js', () => ({
@@ -72,6 +82,7 @@ describe('scanProduct', () => {
 
     const name = await scanProduct(new File(['x'], 'p.jpg'));
 
+    expect(createWorker).toHaveBeenCalledWith('eng+nld', undefined, expect.any(Object));
     expect(worker.setParameters).toHaveBeenCalledWith({ tessedit_pageseg_mode: '3' });
     expect(name).toBe('Basmati Rice');
   });

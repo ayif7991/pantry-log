@@ -12,12 +12,15 @@
  * biggest text on the packaging", which is usually the product name.
  *
  * Like receipt scanning, this is a guess for the user to confirm/edit, not
- * something added blindly.
+ * something added blindly. Recognizes English and Dutch text (labels sold
+ * in the Netherlands are almost always Dutch, sometimes mixed with English
+ * brand names).
  */
 
-/** Words that mark a line as packaging fine print rather than the product name. */
+/** Words that mark a line as packaging fine print rather than the product name (English + Dutch). */
 const NOISE = new RegExp(
   [
+    // English
     'ingredients?',
     'nutrition',
     'net\\s?wt',
@@ -42,6 +45,22 @@ const NOISE = new RegExp(
     'batch',
     'fssai',
     'customer care',
+    // Dutch
+    'ingredi[eë]nten',
+    'voedingswaarde',
+    'houdbaar',
+    'netto\\s?gewicht',
+    'ten minste houdbaar',
+    'gefabriceerd',
+    'vervaardigd',
+    'gedistribueerd',
+    'verpakt',
+    'bevat',
+    'allergenen',
+    'bewaren',
+    'streepjescode',
+    'klantenservice',
+    'kcal',
   ].join('|'),
   'i',
 );
@@ -51,7 +70,7 @@ export async function scanProduct(
   onProgress?: (fraction: number) => void,
 ): Promise<string | null> {
   const { createWorker, PSM } = await import('tesseract.js');
-  const worker = await createWorker('eng', undefined, {
+  const worker = await createWorker('eng+nld', undefined, {
     logger: (m) => {
       if (m.status === 'recognizing text' && typeof m.progress === 'number') {
         onProgress?.(m.progress);

@@ -18,11 +18,13 @@ live preview), so it's always reviewed before anything is added.
 - [Vite](https://vitejs.dev/) for dev server and bundling
 - No framework — a tiny observable `Store` drives plain DOM rendering
 - [tesseract.js](https://github.com/naptha/tesseract.js) for on-device OCR —
-  loaded lazily; the engine + English model are fetched from a CDN the first
-  time something is scanned (needs a network connection that once). Receipts
-  and single-product photos use different page-segmentation settings, since a
-  receipt is a uniform column of text but a product label has one name in a
-  much bigger font than everything around it.
+  loaded lazily; the engine + English/Dutch models are fetched from a CDN the
+  first time something is scanned (needs a network connection that once).
+  Receipts and single-product photos use different page-segmentation
+  settings, since a receipt is a uniform column of text but a product label
+  has one name in a much bigger font than everything around it. Both
+  recognize English and Dutch text/wording (comma decimals, € prices, "BTW"/
+  "totaal"/"korting" etc. on receipts, Dutch packaging fine print on labels).
 
 ## Getting started
 

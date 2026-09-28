@@ -2,10 +2,10 @@
  * Read a photo of a receipt and pull out candidate item lines.
  *
  * OCR runs fully in the browser via tesseract.js (loaded on demand — the
- * engine + English model are fetched from a CDN the first time a receipt is
- * scanned). The raw text is then filtered down to lines that look like
- * purchases, with prices stripped and "2 @ 1.99" style quantities folded into
- * the `xN` form that {@link parseBulkInput} understands.
+ * engine + English/Dutch models are fetched from a CDN the first time a
+ * receipt is scanned). The raw text is then filtered down to lines that look
+ * like purchases, with prices stripped and "2 @ 1.99" style quantities
+ * folded into the `xN` form that {@link parseBulkInput} understands.
  *
  * Grocery receipts abbreviate heavily, so the output is meant to be shown to
  * the user for review, not added blindly.
@@ -13,9 +13,17 @@
 
 const MAX_LINES = 60;
 
-/** Words that mark a line as receipt chrome rather than a product. */
+/**
+ * A price token to strip out: "$3.99", "3,99", "€3.99", "3.99€". Allows a
+ * missing leading digit ("*.88" style: ".88") since some receipts print
+ * sub-unit prices without the leading 0.
+ */
+const PRICE = String.raw`[$€]?\d*[.,]\d{2}\s?[$€]?`;
+
+/** Words that mark a line as receipt chrome rather than a product (English + Dutch). */
 const NOISE = new RegExp(
   [
+    // English
     'sub\\s?total',
     'total',
     'balance',
@@ -55,6 +63,9 @@ const NOISE = new RegExp(
     'points',
     'savings',
     'coupon',
+    'discount',
+    'promo',
+    'you pay',
     'account',
     'tel[:.]',
     'phone',
@@ -62,16 +73,51 @@ const NOISE = new RegExp(
     'http',
     'return policy',
     'customer copy',
+    // Dutch
+    'sub\\s?totaal',
+    'totaal',
+    'te betalen',
+    'verschuldigd',
+    '\\bbtw\\b',
+    'korting',
+    'statiegeld',
+    'contant',
+    '\\bpin(?:nen)?\\b',
+    'bedankt',
+    'tot ziens',
+    'kassa(?:bon)?',
+    '\\bwinkel\\b',
+    '\\bbon(?:uskaart)?\\b',
+    'klantenkaart',
+    'spaarpunten',
+    'filiaal',
+    'retour',
+    'artikelen',
+    'openingstijden',
   ].join('|'),
   'i',
 );
+
+/** Lines that mark roughly where the header ends and the item list begins. */
+const HEADER_MARKER = /\b(register|cashier|op\s?#|trans\s?#|store\s?#|kassa|winkel)\b/i;
+
+/**
+ * The end-of-items marker: subtotal/total, in English or Dutch. Dutch
+ * "totaal" isn't "total" with a suffix tacked on — the extra letter sits in
+ * the middle (t-o-t-a-a-l vs t-o-t-a-l) — so it needs its own alternative
+ * rather than a `total(?:aal)?` shortcut, which would never match it.
+ */
+const TOTAL_MARKER = /\b(?:sub\s?)?(?:totaal|total)\b|amount due|balance due|te betalen|verschuldigd/i;
+
+/** A negative price ("-0.50", "-€0,30") — a coupon/discount adjustment, never a product. */
+const NEGATIVE_PRICE = /-\s?[$€]?\d+[.,]\d{2}(?!\d)|\d+[.,]\d{2}\s?-(?:\s|$)/;
 
 export async function scanReceipt(
   file: File,
   onProgress?: (fraction: number) => void,
 ): Promise<string[]> {
   const { default: Tesseract } = await import('tesseract.js');
-  const { data } = await Tesseract.recognize(file, 'eng', {
+  const { data } = await Tesseract.recognize(file, 'eng+nld', {
     logger: (m) => {
       if (m.status === 'recognizing text' && typeof m.progress === 'number') {
         onProgress?.(m.progress);
@@ -83,15 +129,9 @@ export async function scanReceipt(
 
 export function extractItemLines(text: string): string[] {
   const rawLines = text.split(/\r?\n/);
+  const start = findStart(rawLines);
 
-  // Purchases sit between the first priced line (the header/logo/address block
-  // above it has no prices) and the totals block (subtotal, tax, payment…).
-  let start = rawLines.findIndex((line) => /\d[.,]\d{2}(?!\d)/.test(line));
-  if (start < 0) start = 0;
-
-  let end = rawLines.findIndex(
-    (line, i) => i >= start && /\b(sub\s?total|total|amount due|balance due)\b/i.test(line),
-  );
+  let end = rawLines.findIndex((line, i) => i >= start && TOTAL_MARKER.test(line));
   if (end < 0) end = rawLines.length;
 
   const seen = new Set<string>();
@@ -112,13 +152,41 @@ export function extractItemLines(text: string): string[] {
   return lines;
 }
 
+/**
+ * Purchases sit between the header (logo/address/register info) and the
+ * totals block. The first well-formed price is usually the first item — but
+ * if OCR garbles that specific price (common: a large or bold price is
+ * exactly the kind of thing OCR misreads), everything above the *next*
+ * lucky price match would otherwise be lost, including real items.
+ *
+ * So instead of trusting that first price match outright, walk backward
+ * from it and keep absorbing lines that still look like plausible items
+ * (has letters, not obvious receipt chrome). The walk stops as soon as it
+ * hits something that clearly isn't an item — a blank line, a
+ * register/kassa line, a date/transaction line (mostly digits) — which in
+ * practice is always at most a line or two above the true first item.
+ */
+function findStart(lines: readonly string[]): number {
+  const priceIdx = lines.findIndex((line) => /\d[.,]\d{2}(?!\d)/.test(line));
+  if (priceIdx < 0) return 0;
+
+  let start = priceIdx;
+  while (start > 0) {
+    const prev = (lines[start - 1] ?? '').replace(/\s+/g, ' ').trim();
+    if (!prev || HEADER_MARKER.test(prev) || !isProbablyItem(prev)) break;
+    start--;
+  }
+  return start;
+}
+
 function cleanupLine(raw: string): string | null {
   let line = raw.replace(/\s+/g, ' ').trim();
   if (!line) return null;
+  if (NEGATIVE_PRICE.test(line)) return null; // coupon/discount adjustment, not a product
 
-  // "2 @ $1.99" / "2 @ 1.99 ea" -> remember the quantity, drop the pricing.
+  // "2 @ $1.99" / "2 @ 1,99 ea" -> remember the quantity, drop the pricing.
   let qty: number | null = null;
-  const atMatch = line.match(/(\d+)\s*@\s*\$?\d+[.,]\d{2}\s*(?:ea\b)?/i);
+  const atMatch = line.match(new RegExp(String.raw`(\d+)\s*@\s*${PRICE}\s*(?:ea\b)?`, 'i'));
   if (atMatch && atMatch[1]) {
     qty = Number.parseInt(atMatch[1], 10);
     line = line.replace(atMatch[0], ' ');
@@ -138,9 +206,10 @@ function cleanupLine(raw: string): string | null {
   // Long numeric prefixes are PLU / barcode noise.
   line = line.replace(/^\d{4,}\s+/, '');
 
-  // Trailing price(s), optionally with a tax-code letter: "3.99", "$3.99 F", "-1.00".
-  line = line.replace(/\s*-?\$?\d+[.,]\d{2}\s*[A-Z]?$/g, '').trim();
-  line = line.replace(/\s*-?\$?\d+[.,]\d{2}\s*[A-Z]?$/g, '').trim();
+  // Trailing price(s), optionally with a tax-code letter: "3.99", "3,99", "$3.99 F".
+  const trailingPrice = new RegExp(`\\s*${PRICE}\\s*[A-Z]?$`);
+  line = line.replace(trailingPrice, '').trim();
+  line = line.replace(trailingPrice, '').trim();
 
   // Drop stray leftover symbols at the ends.
   line = line.replace(/^[^a-z0-9]+|[^a-z0-9)]+$/gi, '').trim();
