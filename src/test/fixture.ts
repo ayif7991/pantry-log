@@ -42,6 +42,9 @@ export const FIXTURE_HTML = `
 
   <dialog id="addDialog">
     <form id="addForm">
+      <button type="button" id="scanProduct">Scan a product photo</button>
+      <input type="file" id="productFile" hidden>
+      <div id="productScanStatus" hidden></div>
       <input type="text" id="fName">
       <input type="number" id="fQty" value="1">
       <select id="fUnit">
