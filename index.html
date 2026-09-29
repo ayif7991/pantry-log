@@ -63,6 +63,14 @@
 <dialog id="addDialog">
   <form class="dialog-inner" id="addForm">
     <h2>Add pantry item</h2>
+
+    <button type="button" class="scan-btn" id="scanProduct">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Scan a product photo
+    </button>
+    <input type="file" id="productFile" accept="image/*" capture="environment" hidden>
+    <div class="scan-status" id="productScanStatus" hidden></div>
+
     <div class="field">
       <label for="fName">Item name</label>
       <input type="text" id="fName" placeholder="e.g. Basmati rice" required autocomplete="off">

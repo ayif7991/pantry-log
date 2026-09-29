@@ -27,12 +27,11 @@ describe('extractItemLines', () => {
       'EGGS LARGE 12CT          4.19 F',
       '0079273510 CHEDDAR       6.99 F',
       'QTY 3 YOGURT PLAIN       3.00 F',
-      'COCA COLA 12PK          -1.00',
       '',
-      'SUBTOTAL                24.95',
+      'SUBTOTAL                21.95',
       'TAX                      1.75',
-      'TOTAL                   26.70',
-      'VISA DEBIT              26.70',
+      'TOTAL                   23.70',
+      'VISA DEBIT              23.70',
     ].join('\n');
 
     expect(extractItemLines(receipt)).toEqual([
@@ -42,7 +41,6 @@ describe('extractItemLines', () => {
       'Eggs Large 12ct',
       'Cheddar',
       'Yogurt Plain x3',
-      'Coca Cola 12pk',
     ]);
   });
 
@@ -65,6 +63,31 @@ describe('extractItemLines', () => {
     expect(extractItemLines(receipt)).toEqual(['Banana', 'Apple Honeycrisp', 'Cauliflower']);
   });
 
+  it('drops a standalone discount/coupon line (negative price), a product line is never negative', () => {
+    const receipt = ['MILK                     3.99', 'COUPON SAVE 0.50        -0.50', 'TOTAL      3.49'].join(
+      '\n',
+    );
+    expect(extractItemLines(receipt)).toEqual(['Milk']);
+  });
+
+  it('drops a discount line even when OCR misspells the discount keyword', () => {
+    // Real OCR garbling ("COUPON" -> "COUBON") means keyword matching alone
+    // would miss this; the negative price itself is the reliable signal.
+    const receipt = ['MILK                     3.99', 'COUBON SAVE 0.50        -0.50', 'TOTAL      3.49'].join(
+      '\n',
+    );
+    expect(extractItemLines(receipt)).toEqual(['Milk']);
+  });
+
+  it('drops a trailing-minus style negative price too', () => {
+    const receipt = ['MILK       3.99', 'INSTANT REBATE   1.00-', 'TOTAL      2.99'].join('\n');
+    expect(extractItemLines(receipt)).toEqual(['Milk']);
+  });
+
+  it('strips a price with no leading digit before the decimal (".88" style)', () => {
+    expect(extractItemLines('AVOCADO HASS EA .88 F')).toEqual(['Avocado Hass Ea']);
+  });
+
   it('strips a trailing decimal size/quantity token into "Name" (no unit parsing here)', () => {
     // Size stays attached to the name; parseBulkInput is what turns "2kg" into qty+unit later.
     expect(extractItemLines('BASMATI RICE 2KG 7.49 F')).toEqual(['Basmati Rice 2kg']);
@@ -84,6 +107,118 @@ describe('extractItemLines', () => {
     const lines = Array.from({ length: 80 }, (_, i) => `ITEM NUMBER ${i} 1.00`);
     expect(extractItemLines(lines.join('\n')).length).toBe(60);
   });
+
+  it('does not lose earlier items when the very first item\'s price is OCR-garbled', () => {
+    // Regression test: previously, `start` was found only by locating the
+    // first well-formed price. If OCR mangles that first price entirely
+    // (a very real occurrence — see the "Register 3" line below acting as
+    // a second, independent boundary signal), every line above the next
+    // successfully-matched price was silently dropped, including real items.
+    const receipt = [
+      'FRESH MART GROCERY',
+      '1420 Riverside Ave',
+      'Store #0142 Register 3',
+      'GREAT VALUE MILK 1GAL ERT', // price OCR'd as garbage, not a number at all
+      'BANANAS',
+      '  2.14 lb @ 0.58/lb        1.24 F',
+      'BREAD WHEAT                1.98 F',
+      'SUBTOTAL                   4.70',
+    ].join('\n');
+
+    expect(extractItemLines(receipt)).toEqual(['Great Value Milk 1gal Ert', 'Bananas', 'Bread Wheat']);
+  });
+
+  it('handles a Dutch receipt (comma decimals, euro sign, Dutch total/discount/footer wording)', () => {
+    // Based on a real OCR pass over a synthetic Albert Heijn-style receipt,
+    // including the OCR quirks that actually showed up ("BTA 94" for
+    // "BTW 9%", "BINNEN" for "PINNEN", "xg" for "kg").
+    const receipt = [
+      'ALBERT HEIJN',
+      'Winkel 1421 Kassa 3',
+      'Coolsingel 12, Rotterdam',
+      'Datum: 28-09-2026 09:14',
+      'AH VOLLE MELK 1L 1,39',
+      'BRUINE BOLLEN 6ST 2,29',
+      'JONAGOLD APPELS',
+      '0,68 xg @ 2,29/kg 1,56',
+      'AH BASMATI RIJST 1KG 2,99',
+      'ROOMBOTER 250G 2,49',
+      'HAGELSLAG PUUR 400G 2,19',
+      'KORTING -0,30',
+      'STATIEGELD FLES 0,15',
+      'SUBTOTAAL 12,76',
+      'BTA 9% 1,05',
+      'TOTAAL 12,76',
+      'BINNEN 12,76',
+      'Bedankt voor uw bezoek!',
+      'Tot ziens bij Albert Heijn',
+      'Spaar mee voor korting',
+      'Bonuskaart: 1234 5678',
+      'Openingstijden ma-za 8-22',
+    ].join('\n');
+
+    expect(extractItemLines(receipt)).toEqual([
+      'Ah Volle Melk 1l',
+      'Bruine Bollen 6st',
+      'Jonagold Appels',
+      'Ah Basmati Rijst 1kg',
+      'Roomboter 250g',
+      'Hagelslag Puur 400g',
+    ]);
+  });
+
+  it('folds an inline "N x price" multiplier into an xN suffix', () => {
+    // European/Dutch receipts often show the per-unit price inline after
+    // the name (distinct from the US "N @ price" style), separate from the
+    // line's own trailing total.
+    expect(extractItemLines('PISTACHIOS 2 x 3.14   6.28')).toEqual(['Pistachios x2']);
+    expect(extractItemLines('SNACK MIX 2 × 0.78   1.56')).toEqual(['Snack Mix x2']);
+  });
+
+  it('handles a real Dutch supermarket receipt: inline multipliers, per-line ' +
+    'promo discounts, and receipt-summary words (Aantal/Omschrijving/Bankpas)', () => {
+    // Taken from an actual Jumbo receipt layout: a right-aligned price
+    // column, "Actieprijs" (promo price) shown as its own negative-priced
+    // line directly under the item it discounts, and multi-buy items
+    // priced inline as "2 x 3,14" ahead of the line's own total.
+    const receipt = [
+      'OMSCHRIJVING                    EUR',
+      'Coquilles in zak              10,99 B',
+      '    Actieprijs                 -3,00',
+      'Pistachenoten Calif. 2 x 3,14  6,28 B',
+      '    Actieprijs                 -1,30',
+      'Boerenkool                     1,89 B',
+      '    Actieprijs                 -0,60',
+      'Verse rookworst                1,99 B',
+      'Scharreleieren 12st.            2,39 B',
+      'Margarine                       1,79 B',
+      'Bananen                         1,41 B',
+      '  1,182 kg x 1,19   EUR',
+      'Multi Color sla                 1,19 B',
+      'Slamix              2 x 1,19    2,38 B',
+      'Chocolade kruidnoten 2 x 0,78   1,56 B',
+      '------------------------------------',
+      'Aantal              24art.',
+      '',
+      'Totaal                         44,16',
+      'Bankpas                        44,16',
+      '------------------------------------',
+      "Customer's receipt",
+    ].join('\n');
+
+    expect(extractItemLines(receipt)).toEqual([
+      'Coquilles In Zak',
+      'Pistachenoten Calif x2',
+      'Boerenkool',
+      'Verse Rookworst',
+      'Scharreleieren 12st',
+      'Margarine',
+      'Bananen',
+      'Multi Color Sla',
+      'Slamix x2',
+      'Chocolade Kruidnoten x2',
+    ]);
+  });
 });
 
 describe('scanReceipt', () => {
@@ -91,7 +226,7 @@ describe('scanReceipt', () => {
     vi.mocked(Tesseract.recognize).mockReset();
   });
 
-  it('OCRs the file in English and returns the extracted item lines', async () => {
+  it('OCRs the file in English + Dutch and returns the extracted item lines', async () => {
     vi.mocked(Tesseract.recognize).mockResolvedValue(mockResult('MILK 2.99\nBREAD 1.50\nTOTAL 4.49'));
     const file = new File(['x'], 'receipt.jpg', { type: 'image/jpeg' });
 
@@ -99,7 +234,7 @@ describe('scanReceipt', () => {
 
     expect(Tesseract.recognize).toHaveBeenCalledWith(
       file,
-      'eng',
+      'eng+nld',
       expect.objectContaining({ logger: expect.any(Function) }),
     );
     expect(lines).toEqual(['Milk', 'Bread']);
