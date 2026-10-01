@@ -15,6 +15,14 @@
  * something added blindly. Recognizes English and Dutch text (labels sold
  * in the Netherlands are almost always Dutch, sometimes mixed with English
  * brand names).
+ *
+ * A name that wraps onto a second line ("VOLLE" / "MELK" stacked, rather
+ * than "VOLLE MELK" on one) would otherwise lose half of itself, since only
+ * one line can be "the tallest". So after finding the tallest candidate,
+ * this also absorbs immediately-adjacent lines that are close to it both in
+ * height and in vertical position — a wrapped headline has little space
+ * between its own lines, unlike the gap to an unrelated brand name or
+ * subtitle elsewhere on the packaging.
  */
 
 /** Words that mark a line as packaging fine print rather than the product name (English + Dutch). */
@@ -92,16 +100,52 @@ interface LineLike {
   bbox: { x0: number; y0: number; x1: number; y1: number };
 }
 
-/** Pick the tallest plausible line — exported separately so it's testable without OCR. */
+interface Candidate {
+  text: string;
+  height: number;
+  y0: number;
+  y1: number;
+}
+
+/** How close two lines' heights and the gap between them must be, relative to the anchor's height, to count as the same wrapped headline. */
+const MIN_HEIGHT_RATIO = 0.4;
+const MAX_GAP_RATIO = 0.4;
+
+/** Pick the tallest plausible line, absorbing adjacent lines that look like a wrapped continuation of it — exported separately so it's testable without OCR. */
 export function pickProductName(lines: readonly LineLike[]): string | null {
-  const candidates = lines
-    .map((line) => ({ text: cleanupLine(line.text), height: line.bbox.y1 - line.bbox.y0 }))
-    .filter((line): line is { text: string; height: number } => isPlausibleName(line.text));
+  const candidates: Candidate[] = lines
+    .map((line) => ({
+      text: cleanupLine(line.text),
+      height: line.bbox.y1 - line.bbox.y0,
+      y0: line.bbox.y0,
+      y1: line.bbox.y1,
+    }))
+    .filter((c): c is Candidate => isPlausibleName(c.text))
+    .sort((a, b) => a.y0 - b.y0); // reading order, top to bottom
 
   if (candidates.length === 0) return null;
 
-  candidates.sort((a, b) => b.height - a.height);
-  return titleCase(candidates[0]!.text);
+  const anchorIdx = candidates.reduce((best, c, i) => (c.height > candidates[best]!.height ? i : best), 0);
+  const anchor = candidates[anchorIdx]!;
+  const canAbsorb = (candidate: Candidate, gap: number): boolean =>
+    gap <= anchor.height * MAX_GAP_RATIO && candidate.height >= anchor.height * MIN_HEIGHT_RATIO;
+
+  let start = anchorIdx;
+  while (start > 0) {
+    const above = candidates[start - 1]!;
+    if (!canAbsorb(above, candidates[start]!.y0 - above.y1)) break;
+    start--;
+  }
+
+  let end = anchorIdx;
+  while (end < candidates.length - 1) {
+    const below = candidates[end + 1]!;
+    if (!canAbsorb(below, below.y0 - candidates[end]!.y1)) break;
+    end++;
+  }
+
+  const cluster = candidates.slice(start, end + 1);
+  return titleCase(cluster.map((c) => c.text).join(' '));
 }
 
 function cleanupLine(raw: string): string {
