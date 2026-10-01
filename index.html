@@ -17,6 +17,10 @@
       <span class="tag" id="lastUpdated"></span>
     </div>
     <div class="actions">
+      <button class="add-btn ghost" id="openSync">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+        Sync
+      </button>
       <button class="add-btn ghost" id="openBulk">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         Scan
@@ -147,6 +151,43 @@
       <button type="submit" class="btn-primary" id="bulkSubmit" disabled>Add items</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="syncDialog">
+  <div class="dialog-inner">
+    <h2>Sync across devices</h2>
+
+    <div id="syncUnconfigured" hidden>
+      <p class="hint">
+        Cross-device sync isn't set up for this deployment yet — see the
+        README for how to add a free Firebase project. Until then, this
+        pantry stays on this device only.
+      </p>
+    </div>
+
+    <div id="syncConfigured" hidden>
+      <p class="hint">Enter this code on another device to see the same pantry there.</p>
+      <div class="sync-code-row">
+        <div class="sync-code" id="syncCode">——————</div>
+        <button type="button" class="btn-plain" id="copyCode">Copy</button>
+      </div>
+      <div class="scan-status" id="syncStatusText"></div>
+
+      <p class="hint sync-join-hint">Have a code from another device?</p>
+      <form id="joinForm" class="join-row">
+        <div class="field">
+          <label for="joinCode">Pantry code</label>
+          <input type="text" id="joinCode" placeholder="ABC123" autocomplete="off" maxlength="6">
+        </div>
+        <button type="submit" class="btn-primary" id="joinSubmit">Join</button>
+      </form>
+      <div class="scan-status" id="joinStatus" hidden></div>
+    </div>
+
+    <div class="dialog-actions">
+      <button type="button" class="btn-primary" id="closeSync">Done</button>
+    </div>
+  </div>
 </dialog>
 
 <script type="module" src="/src/main.ts"></script>

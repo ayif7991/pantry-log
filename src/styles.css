@@ -424,7 +424,8 @@ details[open] > .category-heading .chevron { transform: rotate(90deg); }
 
 /* ---------- add panel (dialog) ---------- */
 dialog#addDialog,
-dialog#bulkDialog {
+dialog#bulkDialog,
+dialog#syncDialog {
   border: none;
   border-radius: 18px;
   padding: 0;
@@ -435,7 +436,8 @@ dialog#bulkDialog {
 }
 dialog#bulkDialog { width: min(460px, 92vw); }
 dialog#addDialog::backdrop,
-dialog#bulkDialog::backdrop {
+dialog#bulkDialog::backdrop,
+dialog#syncDialog::backdrop {
   background: rgba(20, 22, 15, 0.45);
 }
 .dialog-inner { padding: 22px; }
@@ -533,6 +535,34 @@ dialog#bulkDialog::backdrop {
   font-size: 11px;
   color: var(--ink-soft);
 }
+
+.sync-code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.sync-code {
+  flex: 1 1 auto;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-align: center;
+  background: var(--surface-sunk);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.sync-join-hint { margin-top: 20px; }
+
+.join-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+.join-row .field { flex: 1 1 auto; margin-bottom: 0; }
+.join-row #joinCode { text-transform: uppercase; }
 
 .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
 .dialog-actions {

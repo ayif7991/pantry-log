@@ -19,6 +19,7 @@
     "vitest": "^4.1.11"
   },
   "dependencies": {
+    "firebase": "^12.19.0",
     "tesseract.js": "^5.1.1"
   }
 }

@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// There's no sign-in in this app — a pantry is identified purely by a
+// 6-character code (see src/pantryCode.ts), and whoever has that code can
+// read and write it. That's the same security model as a shared Google Doc
+// link: not account-level security, just "you need to know the code". Fine
+// for household inventory data, not fine for anything sensitive.
+//
+// These rules only check that the document id *looks like* a real pantry
+// code, to keep the collection from being used as a dumping ground for
+// arbitrary documents. They do not (and structurally cannot, without adding
+// real sign-in) restrict access to "your" pantry specifically.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /pantries/{code} {
+      allow read, write: if code.matches('^[ABCDEFGHJKMNPQRSTUVWXY3456789]{6}$');
+    }
+  }
+}

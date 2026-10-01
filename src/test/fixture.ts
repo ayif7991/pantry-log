@@ -10,6 +10,7 @@ export const FIXTURE_HTML = `
     <header class="app">
       <div class="brand"><h1>Pantry Log</h1><span class="tag" id="lastUpdated"></span></div>
       <div class="actions">
+        <button id="openSync">Sync</button>
         <button id="openBulk">Scan</button>
         <button id="openAdd">Add item</button>
       </div>
@@ -84,6 +85,21 @@ export const FIXTURE_HTML = `
       <button type="button" id="cancelBulk">Cancel</button>
       <button type="submit" id="bulkSubmit" disabled>Add items</button>
     </form>
+  </dialog>
+
+  <dialog id="syncDialog">
+    <div id="syncUnconfigured" hidden></div>
+    <div id="syncConfigured" hidden>
+      <div id="syncCode"></div>
+      <button type="button" id="copyCode">Copy</button>
+      <div id="syncStatusText"></div>
+      <form id="joinForm">
+        <input type="text" id="joinCode">
+        <button type="submit" id="joinSubmit">Join</button>
+      </form>
+      <div id="joinStatus" hidden></div>
+    </div>
+    <button type="button" id="closeSync">Done</button>
   </dialog>
 `;
 

@@ -3,6 +3,7 @@ import { Store } from './store';
 import { render } from './view';
 import { initAddDialog } from './addDialog';
 import { initBulkDialog } from './bulkDialog';
+import { initSyncDialog } from './syncDialog';
 import { byId } from './dom';
 
 const FILTERS: readonly Filter[] = ['all', 'good', 'low', 'out'];
@@ -57,6 +58,7 @@ export function startApp(): void {
   // ---- add-item dialogs ----
   initAddDialog((input) => store.addItem(input));
   initBulkDialog((inputs) => store.addItems(inputs));
+  initSyncDialog(store);
 
   // First paint.
   render(store.getState());

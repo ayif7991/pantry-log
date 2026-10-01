@@ -10,7 +10,14 @@ function item(overrides: Partial<PantryItem> & Pick<PantryItem, 'id' | 'name' | 
 }
 
 function state(overrides: Partial<AppState> = {}): AppState {
-  return { items: [], filter: 'all', query: '', showingExamples: false, ...overrides };
+  return {
+    items: [],
+    filter: 'all',
+    query: '',
+    showingExamples: false,
+    sync: { configured: false, code: null, status: 'disabled' },
+    ...overrides,
+  };
 }
 
 beforeAll(async () => {
